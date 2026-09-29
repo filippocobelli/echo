@@ -1,0 +1,5 @@
+remote_theme: just-the-docs/just-the-docs
+title: ECHO
+description: Open-source e-reader firmware for the Xteink X3 and X4
+mermaid:
+  version: "10.9.0"

@@ -1,0 +1,104 @@
+name: Compile Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, without the leading v. Example: 1.0.1"
+        required: true
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install PlatformIO Core
+        run: uv pip install --system -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+          VERSION="${VERSION#v}"
+
+          # ECHO_VERSION is what OtaUpdater.cpp compares the release tag against,
+          # so the firmware must be built with the version we are releasing.
+          # Range-addressed sed: only touch `version` inside the [echo] section,
+          # never [crosspoint]'s.
+          sed -i "/^\[echo\]/,/^\[/ s/^version = .*/version = ${VERSION}/" platformio.ini
+
+          # The OTA asset name uses version_code, not version. Read it back from
+          # platformio.ini so the attached filenames always match what
+          # scripts/rename_firmware.py actually produced.
+          VERSION_CODE=$(sed -n "/^\[echo\]/,/^\[/ s/^version_code = //p" platformio.ini | head -1 | tr -d '[:space:]')
+          if [ -z "$VERSION_CODE" ]; then
+            echo "Could not read version_code from the [echo] section of platformio.ini" >&2
+            exit 1
+          fi
+
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "Releasing v$VERSION (version_code $VERSION_CODE)"
+
+      - name: Build ECHO
+        run: pio run -e echo_x3 -e echo_x4
+
+      - name: Verify release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in echo_x3 echo_x4; do
+            artifact=".pio/build/${variant}/firmware_${variant}_${VERSION_CODE}.bin"
+            if [ ! -f "$artifact" ]; then
+              echo "Missing expected artifact: $artifact" >&2
+              ls -la ".pio/build/${variant}" >&2 || true
+              exit 1
+            fi
+            echo "- ${variant}: $(stat -c%s "$artifact") bytes" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          # Published immediately (not a draft): /releases/latest only ever returns
+          # published releases, and OtaUpdater.cpp polls that endpoint. A draft here
+          # would mean devices never see the update.
+          draft: false
+          files: |
+            .pio/build/echo_x3/firmware_echo_x3_${{ env.VERSION_CODE }}.bin
+            .pio/build/echo_x4/firmware_echo_x4_${{ env.VERSION_CODE }}.bin

@@ -1,0 +1,199 @@
+#include "FontSelectionActivity.h"
+
+#include <GfxRenderer.h>
+#include <I18n.h>
+
+#include "CrossPointSettings.h"
+#include "MappedInputManager.h"
+#include "components/UITheme.h"
+#include "fontIds.h"
+
+namespace {
+constexpr uint8_t INVALID_STORED_FONT_SIZE = 0xFF;
+
+uint8_t closestSizeIndex(const std::vector<uint8_t>& sizes, const uint8_t targetPointSize) {
+  if (sizes.empty()) return 0;
+
+  uint8_t bestIndex = 0;
+  uint8_t bestDiff = UINT8_MAX;
+  for (size_t i = 0; i < sizes.size(); i++) {
+    const uint8_t size = sizes[i];
+    const uint8_t diff = size > targetPointSize ? size - targetPointSize : targetPointSize - size;
+    if (diff < bestDiff || (diff == bestDiff && size < sizes[bestIndex])) {
+      bestIndex = static_cast<uint8_t>(i);
+      bestDiff = diff;
+    }
+  }
+  return bestIndex;
+}
+
+uint8_t closestBuiltinStoredSize(const uint8_t targetPointSize) {
+  uint8_t bestStored = 0;
+  uint8_t bestPointSize = 0;
+  uint8_t bestDiff = UINT8_MAX;
+
+  for (uint8_t i = 0; i < CrossPointSettings::FONT_SIZE_COUNT; i++) {
+    const auto size = static_cast<CrossPointSettings::FONT_SIZE>(i);
+    const uint8_t stored = CrossPointSettings::getStoredReaderFontSize(size);
+    if (stored == INVALID_STORED_FONT_SIZE) continue;
+
+    const uint8_t pointSize = CrossPointSettings::getReaderFontPointSize(size);
+    const uint8_t diff = pointSize > targetPointSize ? pointSize - targetPointSize : targetPointSize - pointSize;
+    if (diff < bestDiff || (diff == bestDiff && pointSize < bestPointSize)) {
+      bestStored = stored;
+      bestPointSize = pointSize;
+      bestDiff = diff;
+    }
+  }
+  return bestStored;
+}
+
+uint8_t currentFontPointSize(const SdCardFontRegistry* registry) {
+  if (registry && SETTINGS.sdFontFamilyName[0] != '\0') {
+    const SdCardFontFamilyInfo* family = registry->findFamily(SETTINGS.sdFontFamilyName);
+    if (family) {
+      const std::vector<uint8_t> sizes = family->availableSizes();
+      if (!sizes.empty()) {
+        const uint8_t index =
+            SETTINGS.fontSize < sizes.size() ? SETTINGS.fontSize : static_cast<uint8_t>(sizes.size() - 1);
+        return sizes[index];
+      }
+    }
+  }
+  return CrossPointSettings::getReaderFontPointSize(SETTINGS.getEffectiveReaderFontSize());
+}
+}  // namespace
+
+FontSelectionActivity::FontSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                             const SdCardFontRegistry* registry)
+    : Activity("FontSelect", renderer, mappedInput), registry_(registry) {}
+
+void FontSelectionActivity::onEnter() {
+  Activity::onEnter();
+
+  // Build combined font list: built-in + SD card fonts
+  fonts_.clear();
+  fonts_.reserve(CrossPointSettings::BUILTIN_FONT_COUNT + (registry_ ? registry_->getFamilyCount() : 0));
+
+  // Kept in sync with buildFontFamilySetting() in SettingsList.h: Lexend Deca is only a
+  // built-in option when it is linked into the firmware. settingIndex is the picker
+  // position, which is what valueSetter expects — not the stored FONT_FAMILY value.
+  // Lexend Deca is only a built-in option when it is linked into the firmware; otherwise
+  // it is installed from SD and shows up in the SD section below. Kept in sync with
+  // buildFontFamilySetting() in SettingsList.h.
+#ifndef OMIT_LEXENDDECA_FONT
+  fonts_.push_back({I18N.get(StrId::STR_LEXEND_DECA), true, CrossPointSettings::LEXENDDECA});
+#endif
+  fonts_.push_back({I18N.get(StrId::STR_BITTER), true, CrossPointSettings::BITTER});
+  fonts_.push_back({I18N.get(StrId::STR_CHAREINK), true, CrossPointSettings::CHAREINK});
+
+  if (registry_) {
+    const auto& families = registry_->getFamilies();
+    for (int i = 0; i < static_cast<int>(families.size()); i++) {
+      fonts_.push_back({families[i].name, false, static_cast<uint8_t>(i)});
+    }
+  }
+
+  selectedIndex_ = listPositionForCurrentSelection();
+
+  requestUpdate();
+}
+
+void FontSelectionActivity::onExit() { Activity::onExit(); }
+
+void FontSelectionActivity::loop() {
+  if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+    finish();
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+    handleSelection();
+    return;
+  }
+
+  const int listSize = static_cast<int>(fonts_.size());
+  const int pageItems = UITheme::getNumberOfItemsPerPage(renderer, true, false, true, false);
+
+  buttonNavigator_.onNextRelease([this, listSize] {
+    selectedIndex_ = ButtonNavigator::nextIndex(selectedIndex_, listSize);
+    requestUpdate();
+  });
+
+  buttonNavigator_.onPreviousRelease([this, listSize] {
+    selectedIndex_ = ButtonNavigator::previousIndex(selectedIndex_, listSize);
+    requestUpdate();
+  });
+
+  buttonNavigator_.onNextContinuous([this, listSize, pageItems] {
+    selectedIndex_ = ButtonNavigator::nextPageIndex(selectedIndex_, listSize, pageItems);
+    requestUpdate();
+  });
+
+  buttonNavigator_.onPreviousContinuous([this, listSize, pageItems] {
+    selectedIndex_ = ButtonNavigator::previousPageIndex(selectedIndex_, listSize, pageItems);
+    requestUpdate();
+  });
+}
+
+int FontSelectionActivity::listPositionForCurrentSelection() const {
+  if (SETTINGS.sdFontFamilyName[0] != '\0') {
+    for (size_t i = 0; i < fonts_.size(); i++) {
+      if (!fonts_[i].isBuiltin && fonts_[i].name == SETTINGS.sdFontFamilyName) return static_cast<int>(i);
+    }
+    // Selected SD family is not installed any more — fall through to the built-in list.
+  }
+  for (size_t i = 0; i < fonts_.size(); i++) {
+    if (fonts_[i].isBuiltin && fonts_[i].settingIndex == SETTINGS.fontFamily) return static_cast<int>(i);
+  }
+  // The stored family is not offered in this build (Lexend Deca once it moved to SD);
+  // point at the first entry, which is the family its glyphs now fall back to.
+  return 0;
+}
+
+void FontSelectionActivity::handleSelection() {
+  const auto& font = fonts_[selectedIndex_];
+  const uint8_t targetPointSize = currentFontPointSize(registry_);
+  if (font.isBuiltin) {
+    SETTINGS.fontFamily = font.settingIndex;
+    SETTINGS.sdFontFamilyName[0] = '\0';
+    SETTINGS.fontSize = closestBuiltinStoredSize(targetPointSize);
+  } else if (registry_) {
+    int sdIdx = font.settingIndex;
+    const auto& families = registry_->getFamilies();
+    if (sdIdx < static_cast<int>(families.size())) {
+      const std::vector<uint8_t> sizes = families[sdIdx].availableSizes();
+      SETTINGS.fontSize = closestSizeIndex(sizes, targetPointSize);
+      strncpy(SETTINGS.sdFontFamilyName, families[sdIdx].name.c_str(), sizeof(SETTINGS.sdFontFamilyName) - 1);
+      SETTINGS.sdFontFamilyName[sizeof(SETTINGS.sdFontFamilyName) - 1] = '\0';
+    }
+  }
+  finish();
+}
+
+void FontSelectionActivity::render(RenderLock&&) {
+  renderer.clearScreen();
+
+  const auto pageWidth = renderer.getScreenWidth();
+  const auto pageHeight = renderer.getScreenHeight();
+  const auto& metrics = UITheme::getInstance().getMetrics();
+
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_FONT_FAMILY));
+
+  const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
+  const int contentHeight = pageHeight - contentTop - metrics.buttonHintsHeight - metrics.verticalSpacing;
+
+  // Determine which font index is currently active (to mark as "Selected")
+  const int currentFontIndex = listPositionForCurrentSelection();
+
+  GUI.drawList(
+      renderer, Rect{0, contentTop, pageWidth, contentHeight}, static_cast<int>(fonts_.size()), selectedIndex_,
+      [this](int index) { return fonts_[index].name; }, nullptr, nullptr,
+      [this, currentFontIndex](int index) -> std::string { return index == currentFontIndex ? tr(STR_SELECTED) : ""; },
+      true);
+
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+
+  renderer.displayBuffer();
+}

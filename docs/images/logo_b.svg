@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="ECHO">
+  <title>ECHO — variant B (boot)</title>
+  <rect x="0" y="0" width="160" height="160" rx="22" fill="#1a1a18"/>
+  <rect x="30" y="32"  width="96" height="18" rx="4" fill="#ffffff"/>
+  <rect x="30" y="71"  width="60" height="18" rx="4" fill="#ffffff"/>
+  <rect x="30" y="110" width="96" height="18" rx="4" fill="#ffffff"/>
+</svg>
