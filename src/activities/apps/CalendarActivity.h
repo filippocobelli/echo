@@ -39,7 +39,7 @@ class CalendarActivity final : public Activity {
   void render(RenderLock&&) override;
 
   // iCal "DTSTART" value ("20260930", "20260930T180000", "20260930T180000Z") -> local event fields.
-  // Public and static so the host tests can exercise it.
+  // Static: it only depends on its arguments and on the process timezone (TZ).
   static bool parseIcsDateTime(const char* value, CalendarEvent& out);
 
  private:

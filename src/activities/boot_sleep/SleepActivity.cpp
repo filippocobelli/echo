@@ -660,23 +660,28 @@ void SleepActivity::renderReadingDashboardSleepScreen() const {
   renderer.drawLine(left, y, right, y);
   y += metrics.verticalSpacing;
 
-  const std::string goalLine = std::string(tr(STR_DAILY_GOAL)) + ": " + std::to_string(todayMinutes) + "/" +
-                               std::to_string(goalMinutes) + " min";
-  renderer.drawText(UI_10_FONT_ID, left, y, goalLine.c_str());
   // The real percentage sits at the right end of the goal line; it can exceed 100%.
   const uint32_t goalPercent =
       goalMinutes > 0 ? static_cast<uint32_t>((static_cast<uint64_t>(todayMinutes) * 100) / goalMinutes) : 0;
   const std::string percentText = std::to_string(goalPercent) + "%";
-  renderer.drawText(UI_10_FONT_ID, right - renderer.getTextWidth(UI_10_FONT_ID, percentText.c_str()), y,
-                    percentText.c_str());
+  const int percentWidth = renderer.getTextWidth(UI_10_FONT_ID, percentText.c_str());
+  // Long translations (and the narrower X4 screen) must not run into the percentage: only the
+  // label is shortened, the minutes always stay readable.
+  const std::string goalValue = ": " + std::to_string(todayMinutes) + "/" + std::to_string(goalMinutes) + " min";
+  const int goalValueWidth = renderer.getTextWidth(UI_10_FONT_ID, goalValue.c_str());
+  const std::string goalLine =
+      renderer.truncatedText(UI_10_FONT_ID, tr(STR_DAILY_GOAL), right - left - percentWidth - 12 - goalValueWidth) +
+      goalValue;
+  renderer.drawText(UI_10_FONT_ID, left, y, goalLine.c_str());
+  renderer.drawText(UI_10_FONT_ID, right - percentWidth, y, percentText.c_str());
   y += smallLineH + 4;
   // Bar filled up to 100% at most, so an exceeded goal never spills past the frame.
   const int barWidth = right - left;
   renderer.drawRect(left, y, barWidth, metrics.progressBarHeight);
   const int fillWidth =
-      goalMinutes > 0 ? static_cast<int>((static_cast<uint64_t>(barWidth - 4) * std::min(todayMinutes, goalMinutes)) /
-                                         goalMinutes)
-                      : 0;
+      goalMinutes > 0
+          ? static_cast<int>((static_cast<uint64_t>(barWidth - 4) * std::min(todayMinutes, goalMinutes)) / goalMinutes)
+          : 0;
   if (fillWidth > 0) renderer.fillRect(left + 2, y + 2, fillWidth, metrics.progressBarHeight - 4);
   y += metrics.progressBarHeight + metrics.verticalSpacing;
   renderer.drawLine(left, y, right, y);

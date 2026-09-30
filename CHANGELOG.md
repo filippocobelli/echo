@@ -31,7 +31,8 @@ Release v1.0.1.
 ### Fixed
 - **Reading Dashboard sleep screen.** The percentage no longer prints over the streak line: it sits
   at the right end of the goal line and shows the real value (e.g. 150%). The progress bar is capped
-  at 100% and no longer spills outside its frame when the daily goal is exceeded.
+  at 100% and no longer spills outside its frame when the daily goal is exceeded. A long goal label
+  (e.g. Italian on the X4) is shortened with an ellipsis, so the minutes and the percentage stay readable.
 - **Button hint labels wider than their box** (any language, any screen, X3 and X4) are shortened
   with an ellipsis in all four themes instead of running into the neighbouring button.
 

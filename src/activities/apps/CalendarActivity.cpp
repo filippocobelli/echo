@@ -10,6 +10,7 @@
 #include <cstring>
 #include <ctime>
 #include <new>
+#include <numeric>
 #include <string>
 
 #include "CrossPointSettings.h"
@@ -35,7 +36,6 @@ static constexpr int kSmallFont = SMALL_FONT_ID;
 static constexpr size_t kMaxEvents = 100;
 static constexpr int kKeepDaysBeforeToday = 31;  // older events are dropped while parsing
 static constexpr int kDownloadBufSize = 32768;
-
 
 namespace {
 
@@ -134,7 +134,7 @@ bool CalendarActivity::parseIcsDateTime(const char* value, CalendarEvent& out) {
       // UTC timestamp: shift into the device's timezone (set through TZ by the time settings).
       const int64_t epoch = daysFromCivil(year, month, day) * 86400 + hour * 3600 + minute * 60;
       const time_t t = static_cast<time_t>(epoch);
-      struct tm local {};
+      struct tm local{};
       if (localtime_r(&t, &local) != nullptr) {
         out.year = static_cast<uint16_t>(local.tm_year + 1900);
         out.month = static_cast<uint8_t>(local.tm_mon + 1);
@@ -289,7 +289,7 @@ void CalendarActivity::readClock() {
   const time_t now = time(nullptr);
   haveToday = false;
   if (now < 1700000000) return;  // clock not set yet
-  struct tm local {};
+  struct tm local{};
   if (localtime_r(&now, &local) == nullptr) return;
   haveToday = true;
   todayYear = local.tm_year + 1900;
@@ -447,10 +447,11 @@ void CalendarActivity::render(RenderLock&&) {
   const int rowHeight = std::max(textLine + 18, 40);
   const int circle = std::min(cellWidth - 8, textLine + 8);
 
-  uint32_t daysWithEvents = 0;  // bit d = at least one event on day d
-  for (const auto& e : events) {
-    if (e.year == viewYear && e.month == viewMonth) daysWithEvents |= (1u << e.day);
-  }
+  // Bit d set = at least one event on day d of the shown month.
+  const uint32_t daysWithEvents =
+      std::accumulate(events.begin(), events.end(), uint32_t{0}, [this](const uint32_t mask, const CalendarEvent& e) {
+        return (e.year == viewYear && e.month == viewMonth) ? (mask | (1u << e.day)) : mask;
+      });
 
   for (int day = 1; day <= monthDays; ++day) {
     const int slot = firstWeekday + day - 1;
@@ -496,8 +497,8 @@ void CalendarActivity::render(RenderLock&&) {
   if (syncing) {
     renderer.drawCenteredText(kTextFont, agendaTop + agendaRowHeight, tr(STR_SYNCING_TIME));
   } else if (agendaCount == 0) {
-    const char* message = (SETTINGS.calendarUrl[0] == '\0' && events.empty()) ? tr(STR_CALENDAR_NO_URL)
-                                                                              : tr(STR_CALENDAR_NO_EVENTS);
+    const char* message =
+        (SETTINGS.calendarUrl[0] == '\0' && events.empty()) ? tr(STR_CALENDAR_NO_URL) : tr(STR_CALENDAR_NO_EVENTS);
     const std::string fitted = renderer.truncatedText(kTextFont, message, gridWidth);
     renderer.drawCenteredText(kTextFont, agendaTop + agendaRowHeight / 2, fitted.c_str());
   } else {
@@ -524,7 +525,8 @@ void CalendarActivity::render(RenderLock&&) {
       if (e.allDay) {
         snprintf(timeText, sizeof(timeText), "%s", tr(STR_CAL_ALL_DAY));
       } else {
-        snprintf(timeText, sizeof(timeText), "%02u:%02u", static_cast<unsigned>(e.hour), static_cast<unsigned>(e.minute));
+        snprintf(timeText, sizeof(timeText), "%02u:%02u", static_cast<unsigned>(e.hour),
+                 static_cast<unsigned>(e.minute));
       }
       renderer.drawText(kSmallFont, textLeft, rowY + 2 + textLine, timeText);
     }

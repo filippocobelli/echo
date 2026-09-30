@@ -17,8 +17,8 @@ Open-source e-reader firmware for the Xteink X3 and X4.
 
 ## Download
 
-Grab the firmware for your device from the [**v1.0.1 release**](https://github.com/filippocobelli/Echo/releases/tag/v1.0.1)
-(all versions are on the [Releases](https://github.com/filippocobelli/Echo/releases) page).
+Grab the firmware for your device from the [**latest release**](https://github.com/filippocobelli/Echo/releases/latest)
+(older versions are on the [Releases](https://github.com/filippocobelli/Echo/releases) page).
 
 | Device | File |
 |--------|------|
@@ -107,7 +107,7 @@ Captured from the ECHO simulator at native resolution (528×792, Xteink X3), wit
     <td align="center"><img src="docs/images/screenshots/03-reading.png" width="220" alt="Reading page"><br><sub>Reading page</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/screenshots/04-calendar.png" width="220" alt="Calendar"><br><sub>Calendar agenda from an iCal feed</sub></td>
+    <td align="center"><img src="docs/images/screenshots/04-calendar.png" width="220" alt="Calendar, month view with agenda"><br><sub>Calendar — month view and agenda (iCal)</sub></td>
     <td align="center"><img src="docs/images/screenshots/05-sleep-reading-dashboard.png" width="220" alt="Reading Dashboard sleep screen"><br><sub>Sleep screen — Reading Dashboard</sub></td>
     <td align="center"><img src="docs/images/screenshots/06-cloud-library.png" width="220" alt="Cloud Library"><br><sub>Cloud Library over WebDAV</sub></td>
   </tr>
