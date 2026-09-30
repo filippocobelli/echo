@@ -27,6 +27,12 @@ Grab the firmware for your device from the [**latest release**](https://github.c
 
 ## Flash
 
+> **Use at your own risk.** This firmware is provided *as is*, without
+> warranty of any kind. Installing it is your choice and your responsibility:
+> I am not liable for data loss, malfunctions or damage to your device. Back up
+> your device before flashing. Installing unofficial firmware may void the
+> manufacturer's warranty.
+
 Web flasher: https://crosspointreader.com/#flash-tools (requires Chrome or Edge — WebSerial).
 
 - **X3:** after flashing, unplug the USB cable and plug it back in. Do **not** press Reset.
