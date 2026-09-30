@@ -1,4 +1,10 @@
+[🇮🇹 Italiano](README.it.md)
+
 # ECHO
+
+<p align="center"><img src="docs/images/mockups/echo_hero.png" alt="ECHO on Xteink X3 and X4"></p>
+
+<p align="center"><sub>Device photo: Xteink. ECHO is an independent project, not affiliated with Xteink.</sub></p>
 
 <img src="docs/images/logo_b.svg" width="80">
 
@@ -11,10 +17,13 @@ Open-source e-reader firmware for the Xteink X3 and X4.
 
 ## Download
 
-| Device | Latest firmware |
-|--------|----------------|
-| Xteink X3 | `firmware_echo_x3_<version>.bin` from [Releases](https://github.com/filippocobelli/Echo/releases/latest) |
-| Xteink X4 | `firmware_echo_x4_<version>.bin` from [Releases](https://github.com/filippocobelli/Echo/releases/latest) |
+Grab the firmware for your device from the [**v1.0.1 release**](https://github.com/filippocobelli/Echo/releases/tag/v1.0.1)
+(all versions are on the [Releases](https://github.com/filippocobelli/Echo/releases) page).
+
+| Device | File |
+|--------|------|
+| Xteink X3 | `firmware_echo_x3_<version>.bin` |
+| Xteink X4 | `firmware_echo_x4_<version>.bin` |
 
 ## Flash
 
@@ -56,7 +65,8 @@ slot over SPI, 2.4 GHz WiFi and BLE. Build and flash the binary matching your de
 
 ### 🗓 Calendar
 - iCal (`.ics`) feed over WiFi, URL configurable on-device
-- Agenda list of upcoming events
+- Month view (today highlighted, a dot under days with events) with the agenda of upcoming events below
+- Left / Right change month, Up / Down scroll the agenda
 - Cached to the SD card, so it opens with no network
 
 ### 📖 Dictionary
@@ -68,6 +78,7 @@ slot over SPI, 2.4 GHz WiFi and BLE. Build and flash the binary matching your de
 ### 🌐 Network
 - OPDS browser, with a list view or a two-column cover grid
 - Cloud Library: browse and download books from a WebDAV drive (Koofr, Nextcloud, ownCloud)
+  - Koofr: use an *app password* and enter it **without spaces**
 - Calibre-Web send-to-device
 - WebDAV — mount the SD card as a network drive from Finder, Explorer or iOS Files
 - OTA firmware updates from this repository's GitHub releases
@@ -87,7 +98,20 @@ slot over SPI, 2.4 GHz WiFi and BLE. Build and flash the binary matching your de
 
 ## Screenshots
 
-> Screenshots coming soon.
+Captured from the ECHO simulator at native resolution (528×792, Xteink X3), with sample data and public-domain books.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/01-boot.png" width="220" alt="Boot screen"><br><sub>Boot screen</sub></td>
+    <td align="center"><img src="docs/images/screenshots/02-home-lyra-carousel.png" width="220" alt="Home, Lyra Carousel theme"><br><sub>Home — Lyra Carousel theme</sub></td>
+    <td align="center"><img src="docs/images/screenshots/03-reading.png" width="220" alt="Reading page"><br><sub>Reading page</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/04-calendar.png" width="220" alt="Calendar"><br><sub>Calendar agenda from an iCal feed</sub></td>
+    <td align="center"><img src="docs/images/screenshots/05-sleep-reading-dashboard.png" width="220" alt="Reading Dashboard sleep screen"><br><sub>Sleep screen — Reading Dashboard</sub></td>
+    <td align="center"><img src="docs/images/screenshots/06-cloud-library.png" width="220" alt="Cloud Library"><br><sub>Cloud Library over WebDAV</sub></td>
+  </tr>
+</table>
 
 ## Building from source
 

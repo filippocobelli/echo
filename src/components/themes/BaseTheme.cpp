@@ -173,9 +173,11 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
   for (int i = 0; i < 4; i++) {
     if (labels[i] != nullptr && labels[i][0] != '\0') {
       const int x = buttonPositions[invertText ? 3 - i : i];
-      const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, labels[i]);
+      // A label wider than its box is shortened with an ellipsis instead of spilling into the next box.
+      const std::string fitted = renderer.truncatedText(UI_10_FONT_ID, labels[i], buttonWidth - 4);
+      const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, fitted.c_str());
       const int textX = x + (buttonWidth - 1 - textWidth) / 2;
-      renderer.drawText(UI_10_FONT_ID, textX, textY, labels[i]);
+      renderer.drawText(UI_10_FONT_ID, textX, textY, fitted.c_str());
     }
   }
 

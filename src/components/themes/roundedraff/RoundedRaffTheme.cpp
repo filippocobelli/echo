@@ -467,11 +467,17 @@ void RoundedRaffTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, 
   const bool backDisabled = (leftOuterLabel == nullptr || leftOuterLabel[0] == '\0');
   const int leftGroupX = sidePadding;
   const int rightGroupX = leftGroupX + groupWidth + groupGap;
-  const std::string backLabel = backDisabled ? "" : std::string(leftOuterLabel);
+  // Two labels share each group, so each one gets half of the space between the edge paddings.
+  constexpr int labelGap = 8;
+  const int maxLabelWidth = (groupWidth - 2 * 16 - labelGap) / 2;
+  auto fit = [&](const char* label) {
+    return (label && label[0] != '\0') ? renderer.truncatedText(kGuideFontId, label, maxLabelWidth) : std::string();
+  };
+  const std::string backLabel = backDisabled ? "" : fit(leftOuterLabel);
   // Callers should provide the button labels. If a label is not specified, it should render empty.
-  const std::string selectText = (leftInnerLabel && leftInnerLabel[0] != '\0') ? std::string(leftInnerLabel) : "";
-  const std::string upText = (rightInnerLabel && rightInnerLabel[0] != '\0') ? std::string(rightInnerLabel) : "";
-  const std::string downText = (rightOuterLabel && rightOuterLabel[0] != '\0') ? std::string(rightOuterLabel) : "";
+  const std::string selectText = fit(leftInnerLabel);
+  const std::string upText = fit(rightInnerLabel);
+  const std::string downText = fit(rightOuterLabel);
 
   // Ensure button hints always "win" visually even if other elements accidentally render into this area.
   renderer.fillRect(leftGroupX, outlineY, groupWidth, hintHeight, false);

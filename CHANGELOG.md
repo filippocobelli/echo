@@ -8,6 +8,35 @@ Versions are identified by firmware version code (`YYYYMMDDNN`), matching the
 
 ---
 
+## [2026093001] — 2026-09-30
+
+Release v1.0.1.
+
+### Added
+- **Calendar month view.** The Calendar app now shows the month name and year, a Monday-first week
+  grid with today as a filled circle and a dot under every day that has events, and the agenda of
+  upcoming events below it (date block on the left, title and time on the right). Left / Right change
+  month, Up / Down scroll the agenda. Times of UTC events are converted to the device timezone;
+  all-day events show "All day". Month names and weekday initials are translated in English and
+  Italian (other languages fall back to English for now).
+- `simulator_x3` PlatformIO environment: the desktop simulator with the 528×792 X3 screen.
+
+### Changed
+- **Boot screen** shows the ECHO release and version code ("v1.0.1 · 2026093001"). The simulator
+  build used to show the upstream CrossInk version (1.3.1); it now reports the ECHO version too.
+- Calendar button hints are short ("Sync", "Prev", "Next") so they no longer overlap.
+- English "Download" hint is now "Get" and "Set Cover" is now "Cover" (Italian "Copertina"), so they
+  fit their button box.
+
+### Fixed
+- **Reading Dashboard sleep screen.** The percentage no longer prints over the streak line: it sits
+  at the right end of the goal line and shows the real value (e.g. 150%). The progress bar is capped
+  at 100% and no longer spills outside its frame when the daily goal is exceeded.
+- **Button hint labels wider than their box** (any language, any screen, X3 and X4) are shortened
+  with an ellipsis in all four themes instead of running into the neighbouring button.
+
+---
+
 ## [2026092901] — 2026-09-29
 
 ### Removed

@@ -318,9 +318,10 @@ ECHO can display upcoming calendar events synced from any iCal (.ics) URL (Googl
 **Using:**
 1. From the Home screen, select **Calendar**.
 2. Press **Confirm** to sync (connects to WiFi if needed).
-3. Use **Up/Down** to scroll through events.
+3. The top of the screen shows the month (Monday first). Today is a filled circle and a dot under a day means it has events. Use **Left/Right** to change month.
+4. Below the grid is the agenda of upcoming events: date on the left, title and time on the right. Use **Up/Down** to scroll it.
 
-Events are cached locally at `/.crosspoint/calendar.ics`. Up to 50 upcoming events are shown, sorted by date.
+Events are cached locally at `/.crosspoint/calendar.ics`. Up to 100 events are kept, sorted by date and time; events older than a month are dropped. Times given in UTC are shown in the timezone set on the device.
 
 ---
 
